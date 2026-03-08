@@ -41,7 +41,7 @@ model Student {
   student   User       @relation(fields: [studentId], references: [id])
   classId   Int
   studentId Int
-  status    Attendance
+  status    Attendance?
 
   @@id([classId, studentId])
   @@map("students")
