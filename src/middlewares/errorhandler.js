@@ -1,8 +1,16 @@
-const errorhandler = (err,req,res,next)=>{
+const errorhandler = (err, req, res, next) => {
   console.log(err);
-  res.status(500).send({
-    success:false,
-    message:"server error"
-  })
+  if (err.name == "JsonWebTokenError") {
+    res.status(401).send({
+      success: false,
+      error: "Unauthorized, token missing or invalid"
+    })
+  }
+  else {
+    res.status(500).send({
+      success: false,
+      error: "server error"
+    })
+  }
 }
 export default errorhandler

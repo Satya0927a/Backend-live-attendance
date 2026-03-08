@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import userinputvalidate from '../middlewares/userinputvalidate.js'
 import { prisma } from '../utils/prisma.js'
+import authmiddleware from '../middlewares/authmiddleware.js'
 const authrouter = express.Router()
 
 authrouter.post('/signup', userinputvalidate, async (req, res, next) => {
@@ -53,34 +54,51 @@ authrouter.post('/login', userinputvalidate, async (req, res, next) => {
         error: "Invalid request schema"
       })
     }
-    
+
     const user = await prisma.user.findUnique({
-      where:{
-        email:email
+      where: {
+        email: email
       }
     })
-    if(!user){
-      return res.status(404).send({
-        success:false,
-        error:"Wrong credentials"
+    if (!user) {
+      return res.status(400).send({
+        success: false,
+        error: "Invalid email or password"
       })
     }
-    const passverify = await bcrypt.compare(password,user.passwordHash)
-    if(!passverify){
-      return res.status(404).send({
-        success:false,
-        error:"Wrong credentials"
+    const passverify = await bcrypt.compare(password, user.passwordHash)
+    if (!passverify) {
+      return res.status(400).send({
+        success: false,
+        error: "Invalid email or password"
       })
     }
     const payload = {
-      userId:user.id,
-      role:user.role
+      userId: user.id,
+      role: user.role
     }
-    const token = jwt.sign(payload,process.env.SECRET)
+    const token = jwt.sign(payload, process.env.SECRET)
+    res.send({
+      success: true,
+      data: {
+        token: token
+      }
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+authrouter.get('/me', authmiddleware, async (req, res, next) => {
+  const {id,name,email,role} = req.user
+  try {
     res.send({
       success:true,
       data:{
-        token:token
+        id:id,
+        name:name,
+        email:email,
+        role:role
       }
     })
   } catch (error) {
