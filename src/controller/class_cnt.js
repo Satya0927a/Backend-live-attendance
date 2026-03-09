@@ -37,6 +37,40 @@ classrouter.post('/', async (req, res, next) => {
     next(error)
   }
 })
+classrouter.get('/:id',async(req,res,next)=>{
+  const classId = parseInt(req.params.id)
+  const classData = await prisma.class.findUnique({
+    where:{
+      id:classId
+    }
+  })
+  if(!classData){
+    return res.status(404).send({
+      success:false,
+      error:"class not found"
+    })
+  }
+  const isastudent = await prisma.student.findUnique({
+    where:{
+      classId_studentId:{
+        classId:classId,
+        studentId:req.user.id
+      }
+    }
+  })
+  if(!isastudent && classData.teacherId != req.user.id){
+    return res.status(403).send({
+      success:false,
+      error:"you dont have access to this class"
+    })
+  }
+  res.send({
+    success:true,
+    data:classData
+  })
+
+})
+
 classrouter.post('/:id/addstudent', async (req, res, next) => {
   try {
     
