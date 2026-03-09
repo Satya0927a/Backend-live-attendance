@@ -42,6 +42,19 @@ classrouter.get('/:id',async(req,res,next)=>{
   const classData = await prisma.class.findUnique({
     where:{
       id:classId
+    },
+    include:{
+      students:{
+        select:{
+          student:{
+            select:{
+              id:true,
+              name:true,
+              email:true
+            }
+          }
+        }
+      }
     }
   })
   if(!classData){
