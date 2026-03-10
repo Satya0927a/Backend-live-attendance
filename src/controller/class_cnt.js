@@ -2,6 +2,7 @@ import express from "express"
 import { prisma } from "../utils/prisma.js"
 const classrouter = express.Router()
 
+//? to create a new class
 classrouter.post('/', async (req, res, next) => {
   try {
     if (req.user.role != "TEACHER") {
@@ -37,6 +38,7 @@ classrouter.post('/', async (req, res, next) => {
     next(error)
   }
 })
+//? to get detail about a class
 classrouter.get('/:id',async(req,res,next)=>{
   const classId = parseInt(req.params.id)
   const classData = await prisma.class.findUnique({
@@ -82,7 +84,7 @@ classrouter.get('/:id',async(req,res,next)=>{
     data:classData
   })
 })
-
+//? to fetch all the students in a class
 classrouter.get('/:id/students',async(req,res,next)=>{
   try {
     if(req.user.role != "TEACHER"){
@@ -122,6 +124,7 @@ classrouter.get('/:id/students',async(req,res,next)=>{
     next(error)
   }
 })
+//? to add a new student only by the teacher
 classrouter.post('/:id/addstudent', async (req, res, next) => {
   try {
     
@@ -200,4 +203,40 @@ classrouter.post('/:id/addstudent', async (req, res, next) => {
   }
 })
 
+classrouter.get('/:id/my-attendance',async(req,res,next)=>{
+  try {
+    const classId = parseInt(req.params.id)
+    const studentId = req.user.id
+    if(req.user.role != "STUDENT"){
+      return res.status(403).send({
+        success:false,
+        error:"forbidden, only students can access this route"
+      })
+    }
+    const student = await prisma.student.findUnique({
+      where:{
+        classId_studentId:{
+          classId:classId,
+          studentId:studentId
+        }
+      },
+      select:{
+        classId:true,
+        status:true
+      }
+    })
+    if(!student){
+      return res.status(404).send({
+        success:false,
+        error:"Class or the student not found"
+      })
+    }
+    res.send({
+      success:true,
+      data:student
+    })
+  } catch (error) {
+    next(error)
+  }
+})
 export default classrouter
