@@ -81,9 +81,47 @@ classrouter.get('/:id',async(req,res,next)=>{
     success:true,
     data:classData
   })
-
 })
 
+classrouter.get('/:id/students',async(req,res,next)=>{
+  try {
+    if(req.user.role != "TEACHER"){
+      return res.status(403).send({
+        success:false,
+        error:"Forbidden only a teacher can access"
+      })
+    }
+    const classId = parseInt(req.params.id)
+    const fetchclass = await prisma.class.findUnique({
+      where:{
+        id:classId
+      }
+    })
+    if(!fetchclass || fetchclass.teacherId != req.user.id){
+      return res.status(404).send({
+        success:false,
+        error:"class not found"
+      })
+    }
+    const students = await prisma.student.findMany({
+      where:{
+        classId:classId
+      },
+      select:{
+        student:{
+          select:{
+            id:true,
+            name:true,
+            email:true
+          }
+        }
+      }
+    })
+    res.send(students)
+  } catch (error) {
+    next(error)
+  }
+})
 classrouter.post('/:id/addstudent', async (req, res, next) => {
   try {
     
