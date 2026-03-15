@@ -1,7 +1,9 @@
 import express from "express"
 import { prisma } from "../utils/prisma.js"
+import { act } from "react";
 const classrouter = express.Router()
 
+export let activeSession = null;
 //? to create a new class
 classrouter.post('/', async (req, res, next) => {
   try {
@@ -263,6 +265,61 @@ classrouter.get('/:id/my-attendance', async (req, res, next) => {
     res.send({
       success: true,
       data: student
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+classrouter.post('/attendance/start',async(req,res,next)=>{
+  try {
+    if(req.user.role != "TEACHER"){
+      return res.status(403).send({
+        success:false,
+        error:"forbidden, only for teachers"
+      })
+    }
+    if(activeSession){
+      return res.status(403).send({
+        success:false,
+        error:"one class session is already active, please wait"
+      })
+    }
+    const {classId} = req.body
+    if(!classId){
+      return res.status(400).send({
+        success:false,
+        error:"invalid inputs"
+      })
+    }
+    const fetchclass = await prisma.class.findUnique({
+      where:{
+        id:classId
+      }
+    })
+    if(!fetchclass){
+      return res.status(404).send({
+        success:false,
+        error:"class not found"
+      })
+    }
+    if(fetchclass.teacherId != req.user.id){
+      return res.status(403).send({
+        success:false,
+        error:"you dont have access to this class"
+      })
+    }
+    activeSession = {
+      classId:classId,
+      teacherId:req.user.id,
+      startedAt: new Date().toISOString(),
+      attendance:{}
+    }
+    res.send({
+      success:true,
+      data:{
+        classId:activeSession.classId,
+        startedAt:activeSession.startedAt
+      }
     })
   } catch (error) {
     next(error)
